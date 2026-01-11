@@ -5,6 +5,7 @@ import { storage, supabase } from './storage.ts';
 import Layout from './components/Layout.tsx';
 import Dashboard from './components/Dashboard.tsx';
 import Clients from './components/Clients.tsx';
+import ClientDetail from './components/ClientDetail.tsx';
 import Visits from './components/Visits.tsx';
 import Agenda from './components/Agenda.tsx';
 import Auth from './components/Auth.tsx';
@@ -44,7 +45,7 @@ const App: React.FC = () => {
           </div>
           <h1 className="text-2xl font-black mb-4">Configuración Requerida</h1>
           <p className="text-slate-600 mb-6 leading-relaxed">
-            Para que <strong>GietCRM</strong> funcione, necesitas configurar las variables de entorno de <strong>Supabase</strong> en Vercel.
+            Para que <strong>GietCRM</strong> funcione, necesitas configurar las variables de entorno de <strong>Supabase</strong>.
           </p>
           <div className="space-y-3 text-left bg-slate-50 p-4 rounded-xl font-mono text-xs border border-slate-200 mb-6">
             <p>VITE_SUPABASE_URL=...</p>
@@ -81,6 +82,7 @@ const App: React.FC = () => {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/clientes" element={<Clients />} />
+          <Route path="/clientes/:id" element={<ClientDetail />} />
           <Route path="/visitas" element={<Visits />} />
           <Route path="/agenda" element={<Agenda />} />
           <Route path="*" element={<Navigate to="/" />} />

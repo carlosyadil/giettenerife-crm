@@ -88,11 +88,15 @@ export const storage = {
   getClients: async () => {
     if (!supabase) return [];
     const { data, error } = await supabase.from('clients').select('*').order('name');
-    if (error) {
-      console.error("Error fetching clients:", error);
-      return [];
-    }
+    if (error) return [];
     return (data || []).map(mapDBToClient);
+  },
+
+  getClientById: async (id: string) => {
+    if (!supabase) return null;
+    const { data, error } = await supabase.from('clients').select('*').eq('id', id).single();
+    if (error) return null;
+    return mapDBToClient(data);
   },
   
   saveClient: async (client: Partial<Client>) => {
@@ -120,6 +124,13 @@ export const storage = {
   getVisits: async () => {
     if (!supabase) return [];
     const { data, error } = await supabase.from('visits').select('*').order('date', { ascending: false });
+    if (error) return [];
+    return (data || []).map(mapDBToVisit);
+  },
+
+  getVisitsByClientId: async (clientId: string) => {
+    if (!supabase) return [];
+    const { data, error } = await supabase.from('visits').select('*').eq('client_id', clientId).order('date', { ascending: false });
     if (error) return [];
     return (data || []).map(mapDBToVisit);
   },
