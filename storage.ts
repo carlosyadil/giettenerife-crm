@@ -128,6 +128,13 @@ export const storage = {
     return (data || []).map(mapDBToVisit);
   },
 
+  getVisitById: async (id: string) => {
+    if (!supabase) return null;
+    const { data, error } = await supabase.from('visits').select('*').eq('id', id).single();
+    if (error) return null;
+    return mapDBToVisit(data);
+  },
+
   getVisitsByClientId: async (clientId: string) => {
     if (!supabase) return [];
     const { data, error } = await supabase.from('visits').select('*').eq('client_id', clientId).order('date', { ascending: false });
@@ -140,6 +147,18 @@ export const storage = {
     const { data: { user } } = await supabase.auth.getUser();
     const dbData = { ...mapVisitToDB(visit), user_id: user?.id };
     const { error } = await supabase.from('visits').insert([dbData]);
+    if (error) throw error;
+  },
+
+  updateVisit: async (id: string, updates: Partial<Visit>) => {
+    if (!supabase) return;
+    const { error } = await supabase.from('visits').update(mapVisitToDB(updates)).eq('id', id);
+    if (error) throw error;
+  },
+
+  deleteVisit: async (id: string) => {
+    if (!supabase) return;
+    const { error } = await supabase.from('visits').delete().eq('id', id);
     if (error) throw error;
   },
 

@@ -2,9 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { storage } from '../storage.ts';
 import { Client, Visit, VisitType, VisitResult, Reminder } from '../types.ts';
-import { Plus, History, Calendar, CheckCircle2, MoreVertical, Search, ClipboardList, Clock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, History, Calendar, CheckCircle2, MoreVertical, Search, ClipboardList, Clock, ChevronRight } from 'lucide-react';
 
 const Visits: React.FC = () => {
+  const navigate = useNavigate();
   const [visits, setVisits] = useState<Visit[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -90,7 +92,7 @@ const Visits: React.FC = () => {
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold">Registro de Visitas</h2>
-          <p className="text-gray-500">Historial de gestiones comerciales.</p>
+          <p className="text-gray-500">Haz clic en una fila para ver o editar el reporte.</p>
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
@@ -110,7 +112,7 @@ const Visits: React.FC = () => {
                 <th className="px-6 py-4">Cliente</th>
                 <th className="px-6 py-4">Tipo</th>
                 <th className="px-6 py-4">Resultado</th>
-                <th className="px-6 py-4">Notas</th>
+                <th className="px-6 py-4 text-right">Acción</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -118,7 +120,11 @@ const Visits: React.FC = () => {
                 const client = clients.find(c => c.id === visit.clientId);
                 const vDate = new Date(visit.date);
                 return (
-                  <tr key={visit.id} className="hover:bg-gray-50/50 transition-colors">
+                  <tr 
+                    key={visit.id} 
+                    onClick={() => navigate(`/visitas/${visit.id}`)}
+                    className="hover:bg-blue-50/30 transition-colors cursor-pointer group"
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <Calendar size={14} className="text-blue-500" />
@@ -132,7 +138,7 @@ const Visits: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="font-bold text-sm text-gray-900">{client?.name || '---'}</p>
+                      <p className="font-bold text-sm text-gray-900 group-hover:text-blue-600 transition-colors">{client?.name || '---'}</p>
                       <p className="text-xs text-blue-600">{client?.city}</p>
                     </td>
                     <td className="px-6 py-4">
@@ -147,8 +153,10 @@ const Visits: React.FC = () => {
                         {visit.result}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm text-gray-500 line-clamp-1 max-w-[200px]">{visit.notes || '-'}</p>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex justify-end">
+                        <ChevronRight size={18} className="text-gray-300 group-hover:text-blue-500 transition-colors" />
+                      </div>
                     </td>
                   </tr>
                 );
@@ -162,9 +170,10 @@ const Visits: React.FC = () => {
         </div>
       </div>
 
+      {/* Modal Visita Rápida (Igual que antes) */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10 duration-300">
+          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10">
             <div className="p-6 bg-blue-600 text-white flex justify-between items-center">
               <div>
                 <h3 className="text-xl font-bold">Nuevo Reporte</h3>
@@ -177,48 +186,25 @@ const Visits: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Cliente Visitado</label>
-                  <select 
-                    required 
-                    value={formData.clientId} 
-                    onChange={e => setFormData({...formData, clientId: e.target.value})}
-                    className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500/20 outline-none transition-all appearance-none"
-                  >
+                  <select required value={formData.clientId} onChange={e => setFormData({...formData, clientId: e.target.value})} className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none transition-all appearance-none">
                     <option value="">Selecciona un taller...</option>
                     {clients.map(c => <option key={c.id} value={c.id}>{c.name} ({c.city})</option>)}
                   </select>
                 </div>
-
                 <div className="md:col-span-2">
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Fecha y Hora</label>
-                  <input 
-                    type="datetime-local"
-                    required
-                    value={formData.date}
-                    onChange={e => setFormData({...formData, date: e.target.value})}
-                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 outline-none"
-                  />
+                  <input type="datetime-local" required value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" />
                 </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Tipo</label>
-                  <select 
-                    value={formData.type} 
-                    onChange={e => setFormData({...formData, type: e.target.value as VisitType})}
-                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none appearance-none"
-                  >
+                <div><label className="block text-xs font-bold text-gray-500 uppercase mb-2">Tipo</label>
+                  <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value as VisitType})} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none">
                     <option value="Primera Visita">Primera Visita</option>
                     <option value="Seguimiento">Seguimiento</option>
                     <option value="Postventa">Postventa</option>
                     <option value="Cierre">Cierre</option>
                   </select>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Resultado</label>
-                  <select 
-                    value={formData.result} 
-                    onChange={e => setFormData({...formData, result: e.target.value as VisitResult})}
-                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none appearance-none"
-                  >
+                <div><label className="block text-xs font-bold text-gray-500 uppercase mb-2">Resultado</label>
+                  <select value={formData.result} onChange={e => setFormData({...formData, result: e.target.value as VisitResult})} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none">
                     <option value="Pendiente">Pendiente</option>
                     <option value="Interesado">Interesado</option>
                     <option value="No Interesado">No Interesado</option>
@@ -226,33 +212,15 @@ const Visits: React.FC = () => {
                   </select>
                 </div>
               </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Notas Rápidas</label>
-                <textarea 
-                  rows={2}
-                  placeholder="Observaciones de la visita..."
-                  value={formData.notes} 
-                  onChange={e => setFormData({...formData, notes: e.target.value})}
-                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20"
-                ></textarea>
+              <div><label className="block text-xs font-bold text-gray-500 uppercase mb-2">Notas Rápidas</label>
+                <textarea rows={2} placeholder="Observaciones..." value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none"></textarea>
               </div>
-
               <div className="pt-4 border-t border-gray-100">
-                <label className="block text-xs font-bold text-blue-600 uppercase mb-3 flex items-center gap-1">
-                  <Calendar size={12} /> Programar Seguimiento
-                </label>
-                <input 
-                  type="datetime-local" 
-                  value={formData.followUpDate} 
-                  onChange={e => setFormData({...formData, followUpDate: e.target.value})}
-                  className="w-full p-3 bg-blue-50 border border-blue-100 text-blue-700 rounded-xl outline-none font-semibold focus:ring-2 focus:ring-blue-500/20"
-                />
+                <label className="block text-xs font-bold text-blue-600 uppercase mb-3 flex items-center gap-1"><Calendar size={12} /> Próximo Seguimiento</label>
+                <input type="datetime-local" value={formData.followUpDate} onChange={e => setFormData({...formData, followUpDate: e.target.value})} className="w-full p-3 bg-blue-50 border border-blue-100 text-blue-700 rounded-xl outline-none font-semibold" />
               </div>
-
-              <button type="submit" className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-200 active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-4 hover:bg-blue-700">
-                <CheckCircle2 size={20} />
-                Guardar Visita
+              <button type="submit" className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-200 active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-4">
+                <CheckCircle2 size={20} /> Guardar Visita
               </button>
             </form>
           </div>

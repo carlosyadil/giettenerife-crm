@@ -7,6 +7,7 @@ import Dashboard from './components/Dashboard.tsx';
 import Clients from './components/Clients.tsx';
 import ClientDetail from './components/ClientDetail.tsx';
 import Visits from './components/Visits.tsx';
+import VisitDetail from './components/VisitDetail.tsx';
 import Agenda from './components/Agenda.tsx';
 import Auth from './components/Auth.tsx';
 import { AlertTriangle, ExternalLink } from 'lucide-react';
@@ -84,6 +85,7 @@ const App: React.FC = () => {
           <Route path="/clientes" element={<Clients />} />
           <Route path="/clientes/:id" element={<ClientDetail />} />
           <Route path="/visitas" element={<Visits />} />
+          <Route path="/visitas/:id" element={<VisitDetail />} />
           <Route path="/agenda" element={<Agenda />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
