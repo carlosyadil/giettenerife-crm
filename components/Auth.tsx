@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ShieldCheck, Mail, Lock, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, Mail, Lock, AlertCircle, CheckCircle2, Info } from 'lucide-react';
 import { storage } from '../storage.ts';
 
 const Auth: React.FC = () => {
@@ -25,17 +25,21 @@ const Auth: React.FC = () => {
         const { error, data } = await storage.signUp(email, pass);
         if (error) throw error;
         
-        // Supabase por defecto requiere confirmación de email.
-        // Si el usuario se crea pero necesita confirmar:
+        // Si hay sesión inmediata, el usuario entrará solo por el estado de App.tsx
+        // Si no hay sesión, es que requiere confirmación
         if (data?.user && !data?.session) {
-          setSuccess('¡Cuenta creada! Revisa tu email para confirmar tu cuenta antes de entrar.');
+          setSuccess('Cuenta creada. Si no recibes el correo, desactiva "Confirm Email" en el panel de Supabase.');
           setIsLogin(true);
         } else {
-          setSuccess('Cuenta creada con éxito.');
+          setSuccess('¡Cuenta creada con éxito! Entrando...');
         }
       }
     } catch (err: any) {
-      setError(err.message || 'Error en la autenticación. Revisa los datos.');
+      if (err.message?.includes('Database error saving next auth response')) {
+        setError('Error de base de datos. Asegúrate de haber ejecutado el SQL inicial en Supabase.');
+      } else {
+        setError(err.message || 'Error en la autenticación.');
+      }
     } finally {
       setLoading(false);
     }
@@ -56,6 +60,13 @@ const Auth: React.FC = () => {
             {isLogin ? 'Gestión Comercial' : 'Crea tu cuenta de comercial'}
           </p>
         </div>
+
+        {!isLogin && (
+          <div className="mb-6 bg-blue-50 border border-blue-100 p-4 rounded-xl flex gap-3 text-xs text-blue-700 leading-relaxed">
+            <Info size={20} className="flex-shrink-0" />
+            <p><strong>Tip:</strong> Si el correo de confirmación no llega, recuerda desactivar "Confirm Email" en Authentication {'>'} Providers en tu panel de Supabase.</p>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {error && (
