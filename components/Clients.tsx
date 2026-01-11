@@ -2,13 +2,15 @@
 import React, { useState, useEffect } from 'react';
 import { storage } from '../storage.ts';
 import { Client } from '../types.ts';
-import { Search, UserPlus, Phone, MapPin, ExternalLink, Edit, Trash2 } from 'lucide-react';
+import { Search, UserPlus, Phone, MapPin, ExternalLink, Edit, Trash2, AlertCircle } from 'lucide-react';
 
 const Clients: React.FC = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -30,9 +32,18 @@ const Clients: React.FC = () => {
   }, []);
 
   const handleOpenModal = (client?: Client) => {
+    setError(null);
     if (client) {
       setEditingClient(client);
-      setFormData({ ...client });
+      setFormData({ 
+        name: client.name || '',
+        contactPerson: client.contactPerson || '',
+        phone: client.phone || '',
+        email: client.email || '',
+        address: client.address || '',
+        city: client.city || '',
+        notes: client.notes || ''
+      });
     } else {
       setEditingClient(null);
       setFormData({
@@ -50,13 +61,19 @@ const Clients: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSaving(true);
+    setError(null);
+    
     try {
-      await storage.saveClient(formData);
+      const clientToSave = editingClient ? { ...formData, id: editingClient.id } : formData;
+      await storage.saveClient(clientToSave);
       await fetchClients();
       setIsModalOpen(false);
-    } catch (error) {
-      console.error("Error saving client:", error);
-      alert("Error al guardar el cliente.");
+    } catch (err: any) {
+      console.error("Error al guardar cliente:", err);
+      setError(err.message || "No se pudo guardar el cliente. Revisa la consola o la tabla SQL.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -65,9 +82,9 @@ const Clients: React.FC = () => {
       try {
         await storage.deleteClient(id);
         await fetchClients();
-      } catch (error) {
-        console.error("Error deleting client:", error);
-        alert("Error al eliminar el cliente.");
+      } catch (err: any) {
+        console.error("Error deleting client:", err);
+        alert("Error al eliminar el cliente: " + err.message);
       }
     }
   };
@@ -78,9 +95,9 @@ const Clients: React.FC = () => {
   };
 
   const filteredClients = clients.filter(c => 
-    c.name.toLowerCase().includes(search.toLowerCase()) || 
-    c.contactPerson.toLowerCase().includes(search.toLowerCase()) ||
-    c.city.toLowerCase().includes(search.toLowerCase())
+    c.name?.toLowerCase().includes(search.toLowerCase()) || 
+    c.contactPerson?.toLowerCase().includes(search.toLowerCase()) ||
+    c.city?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -115,7 +132,7 @@ const Clients: React.FC = () => {
           <div key={client.id} className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow relative group">
             <div className="flex justify-between items-start mb-4">
               <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 font-bold text-lg uppercase">
-                {client.name.charAt(0)}
+                {client.name?.charAt(0) || '?'}
               </div>
               <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button onClick={() => handleOpenModal(client)} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"><Edit size={16} /></button>
@@ -124,12 +141,12 @@ const Clients: React.FC = () => {
             </div>
             
             <h4 className="font-bold text-lg mb-1 leading-tight">{client.name}</h4>
-            <p className="text-blue-600 font-medium text-sm mb-4">{client.contactPerson}</p>
+            <p className="text-blue-600 font-medium text-sm mb-4">{client.contactPerson || 'Sin contacto'}</p>
             
             <div className="space-y-3 text-sm text-gray-600">
               <div className="flex items-center gap-2">
                 <Phone size={14} className="text-gray-400" />
-                <a href={`tel:${client.phone}`} className="hover:text-blue-600 font-medium">{client.phone}</a>
+                <a href={`tel:${client.phone}`} className="hover:text-blue-600 font-medium">{client.phone || 'No disponible'}</a>
               </div>
               <div className="flex items-start gap-2">
                 <MapPin size={14} className="text-gray-400 mt-1 flex-shrink-0" />
@@ -152,6 +169,11 @@ const Clients: React.FC = () => {
             )}
           </div>
         ))}
+        {filteredClients.length === 0 && (
+          <div className="col-span-full py-12 text-center text-gray-400 italic bg-gray-50 rounded-3xl border border-dashed border-gray-200">
+            No se han encontrado clientes.
+          </div>
+        )}
       </div>
 
       {isModalOpen && (
@@ -162,6 +184,13 @@ const Clients: React.FC = () => {
               <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 text-2xl font-light">&times;</button>
             </div>
             <form onSubmit={handleSave} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              {error && (
+                <div className="bg-red-50 text-red-600 p-4 rounded-xl flex items-start gap-3 text-xs font-bold animate-in slide-in-from-top-2">
+                  <AlertCircle size={18} className="flex-shrink-0" />
+                  <span>Error: {error}</span>
+                </div>
+              )}
+              
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nombre del Taller *</label>
                 <input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 outline-none" />
@@ -192,8 +221,12 @@ const Clients: React.FC = () => {
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Notas Comerciales</label>
                 <textarea rows={3} value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 outline-none"></textarea>
               </div>
-              <button type="submit" className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-200 active:scale-[0.98] transition-transform">
-                Guardar Cliente
+              <button 
+                type="submit" 
+                disabled={isSaving}
+                className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-200 active:scale-[0.98] transition-all disabled:opacity-50"
+              >
+                {isSaving ? 'Guardando...' : (editingClient ? 'Actualizar Cliente' : 'Guardar Cliente')}
               </button>
             </form>
           </div>
