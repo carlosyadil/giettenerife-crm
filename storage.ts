@@ -1,12 +1,9 @@
 
-
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Client, Visit, Reminder } from './types';
 
 // En Vite, las variables deben empezar por VITE_ y se acceden por import.meta.env
-// Fix: Use type assertion for import.meta to bypass TypeScript property 'env' does not exist error.
 const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL || '';
-// Fix: Use type assertion for import.meta to bypass TypeScript property 'env' does not exist error.
 const supabaseAnonKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY || '';
 
 if (!supabaseUrl || !supabaseAnonKey) {
@@ -29,6 +26,11 @@ export const storage = {
   signIn: async (email: string, pass: string) => {
     if (!supabase) throw new Error("Supabase no configurado.");
     return await supabase.auth.signInWithPassword({ email, password: pass });
+  },
+
+  signUp: async (email: string, pass: string) => {
+    if (!supabase) throw new Error("Supabase no configurado.");
+    return await supabase.auth.signUp({ email, password: pass });
   },
 
   logout: async () => {
