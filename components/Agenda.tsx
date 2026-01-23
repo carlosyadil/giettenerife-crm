@@ -4,12 +4,25 @@ import { storage } from '../storage.ts';
 import { Reminder, Client } from '../types.ts';
 import { useNavigate } from 'react-router-dom';
 // Add History to imports to avoid conflict with global window.History
-import { CheckCircle2, Circle, Calendar, Clock, MapPin, Trash2, ChevronRight, User, History } from 'lucide-react';
+import { CheckCircle2, Circle, Calendar, Clock, MapPin, Trash2, ChevronRight, User, History, Plus, X } from 'lucide-react';
 
 const Agenda: React.FC = () => {
   const navigate = useNavigate();
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const getNowForInput = () => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    return now.toISOString().slice(0, 16);
+  };
+
+  const [formData, setFormData] = useState({
+    clientId: '',
+    date: getNowForInput(),
+    title: ''
+  });
 
   const fetchData = async () => {
     try {
@@ -48,6 +61,32 @@ const Agenda: React.FC = () => {
       await fetchData();
     } catch (error) {
       console.error("Error deleting reminder:", error);
+    }
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.clientId) return alert('Selecciona un cliente');
+    if (!formData.title) return alert('Indica un motivo');
+
+    try {
+      await storage.saveReminder({
+        clientId: formData.clientId,
+        title: formData.title,
+        date: new Date(formData.date).toISOString(),
+        completed: false
+      });
+
+      await fetchData();
+      setIsModalOpen(false);
+      setFormData({
+        clientId: '',
+        date: getNowForInput(),
+        title: ''
+      });
+    } catch (error) {
+      console.error("Error saving reminder:", error);
+      alert("Error al agendar la visita.");
     }
   };
 
@@ -116,9 +155,18 @@ const Agenda: React.FC = () => {
 
   return (
     <div className="space-y-8 pb-10">
-      <header>
-        <h2 className="text-2xl font-bold">Agenda de Seguimiento</h2>
-        <p className="text-gray-500">Haz clic en una tarea para ir a la ficha del cliente.</p>
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold">Agenda de Seguimiento</h2>
+          <p className="text-gray-500">Haz clic en una tarea para ir a la ficha del cliente.</p>
+        </div>
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-200 hover:bg-blue-700 transition-colors"
+        >
+          <Plus size={20} />
+          <span>Agendar Visita</span>
+        </button>
       </header>
 
       <div className="grid lg:grid-cols-2 gap-8">
@@ -157,6 +205,64 @@ const Agenda: React.FC = () => {
           )}
         </section>
       </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10">
+            <div className="p-6 bg-blue-600 text-white flex justify-between items-center">
+              <div>
+                <h3 className="text-xl font-bold">Agendar Nueva Visita</h3>
+                <p className="text-blue-100 text-xs">Programa un seguimiento o reunión</p>
+              </div>
+              <button onClick={() => setIsModalOpen(false)} className="text-white hover:opacity-70 p-1 rounded-full hover:bg-white/10 transition-colors">
+                <X size={24} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSave} className="p-6 space-y-5">
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Cliente</label>
+                <select
+                  required
+                  value={formData.clientId}
+                  onChange={e => setFormData({...formData, clientId: e.target.value})}
+                  className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none transition-all appearance-none"
+                >
+                  <option value="">Selecciona un taller...</option>
+                  {clients.map(c => <option key={c.id} value={c.id}>{c.name} ({c.city})</option>)}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Fecha y Hora</label>
+                <input
+                  type="datetime-local"
+                  required
+                  value={formData.date}
+                  onChange={e => setFormData({...formData, date: e.target.value})}
+                  className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Motivo / Título</label>
+                <input
+                  type="text"
+                  placeholder="Ej: Visita de cortesía, Demostración..."
+                  required
+                  value={formData.title}
+                  onChange={e => setFormData({...formData, title: e.target.value})}
+                  className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none"
+                />
+              </div>
+
+              <button type="submit" className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-200 active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-4">
+                <Calendar size={20} /> Confirmar Cita
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
