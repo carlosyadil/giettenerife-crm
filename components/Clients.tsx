@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { storage } from '../storage.ts';
 import { Client } from '../types.ts';
 import { useNavigate } from 'react-router-dom';
-import { Search, UserPlus, Phone, MapPin, ExternalLink, Edit, Trash2, AlertCircle, X, ChevronRight } from 'lucide-react';
+import { Search, UserPlus, Phone, MapPin, ExternalLink, Edit, Trash2, AlertCircle, X, ChevronRight, Download } from 'lucide-react';
 
 const Clients: React.FC = () => {
   const navigate = useNavigate();
@@ -101,6 +101,35 @@ const Clients: React.FC = () => {
     }
   };
 
+  const downloadCSV = () => {
+    const headers = ['Nombre', 'Contacto', 'Teléfono', 'Email', 'Dirección', 'Ciudad', 'Notas'];
+    const csvContent = [
+      headers.join(','),
+      ...clients.map(client => {
+        const row = [
+          client.name,
+          client.contactPerson,
+          client.phone,
+          client.email,
+          client.address,
+          client.city,
+          client.notes
+        ].map(field => `"${(field || '').replace(/"/g, '""')}"`); // Escape quotes
+        return row.join(',');
+      })
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'clientes_gietcrm.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const getMapsUrl = (address: string, city: string) => {
     if (!address && !city) return null;
     const query = encodeURIComponent(`${address || ''} ${city || ''}`.trim());
@@ -120,13 +149,22 @@ const Clients: React.FC = () => {
           <h2 className="text-2xl font-bold">Cartera de Clientes</h2>
           <p className="text-gray-500">Haz clic en un taller para ver su ficha completa.</p>
         </div>
-        <button 
-          onClick={(e) => handleOpenModal(e)}
-          className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
-        >
-          <UserPlus size={20} />
-          <span>Añadir Cliente</span>
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={downloadCSV}
+            className="bg-white text-gray-600 border border-gray-200 px-4 py-3 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors shadow-sm"
+          >
+            <Download size={20} />
+            <span className="hidden sm:inline">Exportar CSV</span>
+          </button>
+          <button
+            onClick={(e) => handleOpenModal(e)}
+            className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
+          >
+            <UserPlus size={20} />
+            <span>Añadir Cliente</span>
+          </button>
+        </div>
       </header>
 
       <div className="relative group">
